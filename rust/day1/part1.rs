@@ -1,6 +1,6 @@
 fn main() {
     // read input file
-    let input = std::fs::read_to_string("../input/1.input.txt").unwrap();
+    let input = std::fs::read_to_string("../input/day1/1.input.txt").unwrap();
 
     // split input into lines
     let lines: Vec<&str> = input.lines().collect();

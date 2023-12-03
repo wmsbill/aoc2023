@@ -44,5 +44,5 @@ function main(file) {
   return sum;
 }
 
-const result = main(args[0] ?? "./input/2.test.txt");
+const result = main(args[0] ?? "./input/day1/2.test.txt");
 console.log(result);
