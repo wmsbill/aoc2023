@@ -16,7 +16,10 @@ const sanitizeMap = {
 
 function sanitize(line) {
   const regex = /(?=(one|two|three|four|five|six|seven|eight|nine|zero|\d))/g;
-  return Array.from(line.matchAll(regex), (x) => sanitizeMap[x[1]] || x[1]);
+  return Array.from(
+    line.matchAll(regex),
+    (x) => sanitizeMap[x[1]] || Number(x[1])
+  );
 }
 
 function main(file) {
@@ -27,15 +30,13 @@ function main(file) {
     let firstDigit = -1;
     let lastDigit = -1;
 
-    sanitize(line)
-      .flatMap((c) => (isNaN(Number(c)) ? [] : Number(c)))
-      .forEach((digit) => {
-        if (firstDigit === -1) {
-          firstDigit = digit;
-        }
+    sanitize(line).forEach((digit) => {
+      if (firstDigit === -1) {
+        firstDigit = digit;
+      }
 
-        lastDigit = digit;
-      });
+      lastDigit = digit;
+    });
 
     sum += firstDigit * 10 + lastDigit;
   }
