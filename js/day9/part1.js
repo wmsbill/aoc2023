@@ -23,11 +23,12 @@ function getDiffMatrix(sequence) {
 }
 
 function findNextSequence(sequence) {
-  const num = getDiffMatrix(sequence)
-    .reverse()
-    .reduce((sum, item) => item[0] - sum, 0);
+  const num = getDiffMatrix(sequence).reduce(
+    (sum, item) => sum + item.at(-1),
+    0
+  );
 
-  return sequence[0] - num;
+  return sequence.at(-1) + num;
 }
 
 function main(file) {
