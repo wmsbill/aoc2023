@@ -1,68 +1,41 @@
 const fs = require("node:fs");
 const args = process.argv.slice(2);
 
-function* circular(arr) {
-  let i = 0;
-
-  while (true) {
-    yield arr[i];
-    i = (i + 1) % arr.length;
-  }
+function parse(fileContent) {
+  return fileContent.map((line) => line.split(" ").map(Number));
 }
 
-function parse([instructions, map]) {
-  const route = new Map();
-  const startNodes = [];
+function getDiffMatrix(sequence) {
+  const diffList = [];
+  let currentList = sequence;
 
-  for (const line of map.split("\n")) {
-    const [key, left, right] = line.matchAll(/\w+/g);
-
-    if (key[0].charAt(2) === "A") {
-      startNodes.push(key[0]);
+  do {
+    const newDiffList = [];
+    for (let i = 1; i < currentList.length; i++) {
+      newDiffList.push(currentList[i] - currentList[i - 1]);
     }
 
-    route.set(key[0], { L: left[0], R: right[0] });
-  }
+    diffList.push(newDiffList);
+    currentList = newDiffList;
+  } while (currentList.some((num) => num !== 0));
 
-  return [startNodes, instructions.split(""), route];
+  return diffList;
 }
 
-function gcd(a, b) {
-  for (let temp = b; b !== 0; ) {
-    b = a % b;
-    a = temp;
-    temp = b;
-  }
-  return a;
-}
+function findNextSequence(sequence) {
+  const num = getDiffMatrix(sequence)
+    .reverse()
+    .reduce((sum, item) => item[0] - sum, 0);
 
-function lcm(a, b) {
-  return (a * b) / gcd(a, b);
+  return sequence[0] - num;
 }
 
 function main(file) {
-  const fileContent = fs.readFileSync(file, "utf8").split("\n\n");
-  const [startNodes, instructions, route] = parse(fileContent);
+  const fileContent = fs.readFileSync(file, "utf8").split("\n");
+  const sequenceList = parse(fileContent);
 
-  const [first, ...result] = startNodes.map((node) => {
-    console.info(node);
-
-    let acc = 0;
-    let currentNode = node;
-    const commands = circular(instructions);
-
-    for (const direction of commands) {
-      currentNode = route.get(currentNode)[direction];
-      acc++;
-
-      if (currentNode.charAt(2) === "Z") {
-        return acc;
-      }
-    }
-  });
-
-  return result.reduce(lcm, first);
+  return sequenceList.map(findNextSequence).reduce((a, b) => a + b, 0);
 }
 
-const result = main(args[0] ?? "./input/day8/2.test.txt");
+const result = main(args[0] ?? "./input/day9/1.test.txt");
 console.log(result);
