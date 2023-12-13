@@ -98,51 +98,76 @@ const navigation = {
   L: [0, -1],
 };
 
-const cache = new Map();
-function findLoopLength(start, maze, direction) {
-  let position = start;
+function findLoop(start, maze, direction) {
+  const [startLine, startCol] = start;
+  const cache = [];
+
+  let [line, col] = start;
   let pipe;
   let steps = 0;
   let command = direction;
 
-  while (command) {
-    const [line, col] = position;
-
-    steps++;
+  while (true) {
     pipe = maze[line][col];
-    cache.set([line, col], pipe);
-    maze[line][col] = "x";
+    steps++;
+    cache.push([line, col, pipe]);
     command = commands?.[command]?.[pipe] ?? "";
 
-    if (!command) {
+    const [lineDelta, colDelta] = navigation[command];
+    [line, col] = [line + lineDelta, col + colDelta];
+
+    if (Number.isNaN(line) || (line === startLine && col === startCol)) {
       break;
     }
-
-    const [lineDelta, colDelta] = navigation[command];
-    const [newLine, newCol] = [line + lineDelta, col + colDelta];
-
-    position = [newLine, newCol];
   }
+
+  return cache;
 }
 
-function cleanupMaze(maze) {
-  const newMaze = maze.map((line) =>
-    line.join("").replace(/[^x]/g, "0").split("")
+function recreatePipeMaze(lines, cols, cache) {
+  const newMaze = Array.from({ length: lines }, () =>
+    Array.from({ length: cols }, () => ".")
   );
 
-  for (const [key, value] of cache.entries()) {
-    const [line, col] = key;
-    newMaze[line][col] = value;
+  for (const [line, col, pipe] of cache) {
+    newMaze[line][col] = pipe;
   }
+
   return newMaze;
 }
 
 function findEnclosedTiles(maze) {
   let enclosedTiles = 0;
+  let lastCurve = "";
+
   for (let line = 0; line < maze.length; line++) {
+    let isEnclosedTile = false;
     for (let col = 0; col < maze[line].length; col++) {
-      if (maze[line][col] === "0" && isEnclosed(line, col, maze)) {
+      if (maze[line][col] === "." && isEnclosedTile) {
         enclosedTiles++;
+        maze[line][col] = "$";
+      }
+
+      if (maze[line][col] === "|") {
+        isEnclosedTile = !isEnclosedTile;
+      }
+
+      if (maze[line][col] === "F") {
+        lastCurve = "F";
+      }
+
+      if (maze[line][col] === "L") {
+        lastCurve = "L";
+      }
+
+      if (maze[line][col] === "J" && lastCurve === "F") {
+        lastCurve = "";
+        isEnclosedTile = !isEnclosedTile;
+      }
+
+      if (maze[line][col] === "7" && lastCurve === "L") {
+        lastCurve = "";
+        isEnclosedTile = !isEnclosedTile;
       }
     }
   }
@@ -150,74 +175,16 @@ function findEnclosedTiles(maze) {
   return enclosedTiles;
 }
 
-const curvedPipes = {
-  J: "L",
-  7: "F",
-};
-function isEnclosed(line, col, maze) {
-  if (
-    line === 0 ||
-    col === 0 ||
-    line === maze.length ||
-    col === maze[line].length
-  ) {
-    maze[line][col] = " `";
-    return false;
-  }
-
-  let pipes = 0;
-  let lastCurvedPipe = "";
-
-  for (let i = col; i < maze[line].length; i++) {
-    if (maze[line][i] === "|") {
-      pipes++;
-    }
-
-    if (maze[line][i] === "F") {
-      lastCurvedPipe = "F";
-      continue;
-    }
-
-    if (maze[line][i] === "L") {
-      lastCurvedPipe = "L";
-      continue;
-    }
-
-    if (maze[line][i] === "7" && lastCurvedPipe !== "F") {
-      lastCurvedPipe = " ";
-      pipes++;
-    }
-
-    if (maze[line][i] === "J" && lastCurvedPipe !== "L") {
-      lastCurvedPipe = "";
-      pipes++;
-    }
-  }
-
-  if (pipes % 2) {
-    maze[line][col] = "2";
-    return true;
-  } else {
-    maze[line][col] = " ";
-    return false;
-  }
-}
-
 function main(file) {
   const fileContent = fs.readFileSync(file, "utf8").split("\n");
   const [start, maze] = parse(fileContent);
+  const cols = maze[0].length;
+  const lines = maze.length;
+  const [line, col, direction] = getStartNodes(start, maze)[0];
+  const cache = findLoop([line, col], maze, direction);
+  const newMaze = recreatePipeMaze(lines, cols, cache);
 
-  getStartNodes(start, maze).map(([line, col, direction]) =>
-    findLoopLength([line, col], maze, direction)
-  );
-
-  const newMaze = cleanupMaze(maze);
-
-  let amount = findEnclosedTiles(newMaze);
-
-  console.info(newMaze.map((line) => line.join("")));
-
-  return amount;
+  return findEnclosedTiles(newMaze);
 }
 
 const result = main(args[0] ?? "./input/day10/2.test.txt");
