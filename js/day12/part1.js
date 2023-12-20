@@ -39,7 +39,6 @@ function getPermutations(map, config) {
     );
   }
 
-  isMatch(map, config) ? 1 : 0;
   return isMatch(map, config) ? 1 : 0;
 }
 
@@ -54,8 +53,5 @@ function main(file) {
   return damagedMapList.map(mapArrangements).reduce((a, b) => a + b, 0);
 }
 
-performance.mark("start");
 const result = main(args[0] ?? "./input/day12/1.test.txt");
 console.log(result);
-performance.mark("end");
-console.info(performance.measure("start to end", "start", "end"));

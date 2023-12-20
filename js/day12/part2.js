@@ -1,51 +1,54 @@
 const fs = require("node:fs");
-const { get } = require("node:http");
 const args = process.argv.slice(2);
 
-return fileContent.map((line) => {
-  const [map, config] = line.split(" ");
-  let newMap = (map + "?").repeat(4) + map;
-  let newConfig = (config + ",").repeat(4) + config;
+function parse(fileContent) {
+  return fileContent.map((line) => {
+    const [map, config] = line.split(" ");
+    let newMap = (map + "?").repeat(4) + map;
+    let newConfig = (config + ",").repeat(4) + config;
 
-  return [newMap, newConfig];
-});
-
-function isMatch(map, config) {
-  let currentConfig = [];
-  let damagedCount = 0;
-
-  for (const char of map) {
-    if (char === "#") {
-      damagedCount++;
-    }
-
-    if (char === "." && damagedCount > 0) {
-      currentConfig.push(damagedCount.toString());
-      damagedCount = 0;
-    }
-  }
-
-  if (damagedCount > 0) {
-    currentConfig.push(damagedCount.toString());
-  }
-
-  return currentConfig.join() === config;
-}
-
-function getPermutations(map, config) {
-  if (map.indexOf("?") > -1) {
-    return (
-      getPermutations(map.replace("?", "#"), config) +
-      getPermutations(map.replace("?", "."), config)
-    );
-  }
-
-  isMatch(map, config) ? 1 : 0;
-  return isMatch(map, config) ? 1 : 0;
+    return [newMap + ".", newConfig.split(",").map(Number)];
+  });
 }
 
 function mapArrangements([map, config]) {
-  return getPermutations(map, config);
+  const cache = new Map();
+
+  function getPermutations(i, groupCount, map, config) {
+    const key = `${i},${groupCount}`;
+    if (cache.has(key)) {
+      return cache.get(key);
+    }
+
+    if (groupCount >= config.length) {
+      return map.slice(i).indexOf("#") > -1 ? 0 : 1;
+    }
+
+    if (i == map.length) {
+      return 0;
+    }
+
+    let result = 0;
+    const amount = config[groupCount];
+    const slice = map.slice(i);
+
+    if ("?.".includes(map.charAt(i))) {
+      result += getPermutations(i + 1, groupCount, map, config);
+    }
+
+    if (
+      "#?".includes(map.charAt(i)) &&
+      slice.slice(0, amount).indexOf(".") === -1 &&
+      slice[amount] !== "#"
+    ) {
+      result += getPermutations(i + amount + 1, groupCount + 1, map, config);
+    }
+
+    cache.set(key, result);
+    return result;
+  }
+
+  return getPermutations(0, 0, map, config);
 }
 
 function main(file) {
@@ -55,8 +58,5 @@ function main(file) {
   return damagedMapList.map(mapArrangements).reduce((a, b) => a + b, 0);
 }
 
-performance.mark("start");
 const result = main(args[0] ?? "./input/day12/1.test.txt");
 console.log(result);
-performance.mark("end");
-console.info(performance.measure("start to end", "start", "end"));
