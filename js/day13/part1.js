@@ -33,9 +33,7 @@ function getMirrorIndex(grid) {
 
   return indexes.length ? indexes : [0];
 }
-/**
- * @param {string[]} grid
- */
+
 function transpose(grid) {
   return grid[0].split("").map((_, i) => grid.map((line) => line[i]).join(""));
 }
