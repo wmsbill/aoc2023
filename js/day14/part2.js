@@ -2,19 +2,14 @@ const fs = require("node:fs");
 const { get } = require("node:http");
 const args = process.argv.slice(2);
 
-function calculateWeights(grid, pointers) {
+function calculateWeigh(grid) {
   const length = grid.length;
-  const weights = pointers.slice();
+  let weights = 0;
 
   for (let [line, row] of grid.entries()) {
-    for (let [col, char] of row.entries()) {
-      if (char === "#") {
-        pointers[col] = line + 1;
-      }
-
+    for (let char of row) {
       if (char === "O") {
-        weights[col] += length - pointers[col];
-        pointers[col]++;
+        weights += length - line;
       }
     }
   }
@@ -44,29 +39,44 @@ function transpose(grid) {
   return grid[0].map((_, i) => grid.map((row) => row[i]).reverse());
 }
 
+function cycleDish(grid) {
+  for (let i = 0; i < 4; i++) {
+    tilt(grid);
+    grid = transpose(grid);
+  }
+
+  return grid;
+}
+
 function main(file) {
-  const grid = fs
+  let grid = fs
     .readFileSync(file, "utf8")
     .split("\n")
     .map((line) => line.split(""));
 
-  tilt(grid);
+  const cache = new Map();
 
-  transpose(grid);
-  tilt(grid);
+  let start,
+    finish = 0;
+  const weightList = [];
 
-  // transpose(grid);
-  // tilt(grid);
+  for (let i = 0; i < 1e9; i++) {
+    grid = cycleDish(grid);
+    weightList.push(calculateWeigh(grid));
+    const stringGrid = grid.map((row) => row.join("")).join("\n");
 
-  // transpose(grid);
-  // tilt(grid);
+    if (cache.has(stringGrid)) {
+      start = cache.get(stringGrid);
+      finish = i;
+      break;
+    } else {
+      cache.set(stringGrid, i);
+    }
+  }
 
-  // transpose(grid);
+  const index = ((1e9 - start - 1) % (finish - start)) + start;
 
-  console.info(grid.map((row) => row.join("")).join("\n"));
-
-  // const pointers = Array.from({ length: grid[0].length }, () => 0);
-  // return calculateWeights(grid, pointers).reduce((a, b) => a + b, 0);
+  return weightList[index];
 }
 
 const result = main(args[0] ?? "./input/day14/1.test.txt");
