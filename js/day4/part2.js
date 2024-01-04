@@ -1,5 +1,4 @@
 const fs = require("node:fs");
-const { get } = require("node:http");
 const args = process.argv.slice(2);
 
 const numRegex = /\d+/g;
