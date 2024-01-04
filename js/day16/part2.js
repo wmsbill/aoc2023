@@ -76,7 +76,23 @@ function countEnergizedCells(grid, line, col, direction) {
 function main(file) {
   const grid = fs.readFileSync(file, "utf8").split("\n");
 
-  return countEnergizedCells(grid, 0, 0, "right");
+  let maxEnergy = 0;
+  const bottom = grid.length - 1;
+  const right = grid[0].length - 1;
+
+  for (let i = 0; i < grid[0].length; i++) {
+    const topEnergy = countEnergizedCells(grid, 0, i, "down");
+    const bottomEnergy = countEnergizedCells(grid, bottom, i, "up");
+    maxEnergy = Math.max(maxEnergy, topEnergy, bottomEnergy);
+  }
+
+  for (let i = 0; i < grid.length; i++) {
+    const leftEnergy = countEnergizedCells(grid, i, 0, "right");
+    const rightEnergy = countEnergizedCells(grid, i, right, "left");
+    maxEnergy = Math.max(maxEnergy, leftEnergy, rightEnergy);
+  }
+
+  return maxEnergy;
 }
 
 const result = main(args[0] ?? "./input/day16/1.test.txt");
